@@ -1,11 +1,22 @@
-import R, { fromPairs, zip } from "ramda";
-import { Class, NSClass, NSKeyedArchive, NSSpecialValueTypes, ObjectType, RealisedClasses, Reference } from "./types";
+import { fromPairs, zip } from "ramda";
+import {
+  ArchivedItem,
+  ClassName,
+  NSArray,
+  NSClassInfo,
+  NSDictionary,
+  NSKeyedArchive,
+  NSSpecialValueTypes,
+  NSString,
+  NSValue,
+  ObjectType,
+  RealisedClass,
+  Reference
+} from "./types";
 import { parseNSKR } from "./parse";
 import globby from "globby";
 import fs from "fs";
 import path from "path";
-
-type T = { $class: Reference };
 
 class D2 {
   archive: NSKeyedArchive
@@ -20,16 +31,16 @@ class D2 {
     return this.archive.$objects[reference.UID] as T;
   }
 
-  classOf(thing: T): RealisedClasses {
-    return this.lookup<NSClass>(thing.$class).$classname! as RealisedClasses;
+  classOf(item: ArchivedItem): RealisedClass {
+    return this.lookup<NSClassInfo>(item.$class).$classname! as RealisedClass;
   }
 
-  do(thing: T) {
-    if (typeof thing !== "object") return thing;
+  do(item: ArchivedItem) {
+    if (typeof item !== "object") return item;
 
-    let classOf = this.classOf(thing);
+    let classOf = this.classOf(item);
 
-    let v = handlers[classOf].call(this, thing);
+    let v = handlers[classOf].call(this, item);
     // console.log(classOf, v);
     return v;
   }
@@ -50,64 +61,40 @@ class D2 {
   }
 })()
 
-interface NSArray {
-  $class: Reference,
-  'NS.objects': Reference[]
-}
-
-interface NSDictionary {
-  $class: Reference,
-  'NS.keys': Reference[]
-  'NS.objects': Reference[]
-}
-
-interface NSString {
-  $class: Reference,
-  'NS.string': string
-}
-
-type NSValue = T & ({
-  'NS.special': NSSpecialValueTypes.NSRect
-  'NS.rectval': Reference
-} | {
-  'NS.special': NSSpecialValueTypes.NSSize
-  'NS.sizeval': Reference
-})
-
-function tap(this: D2, t: T) {
+function tap(this: D2, t: ArchivedItem) {
   console.log(this.classOf(t), t);
   return t;
 }
 
 // We decide what to do with the item based on the class
-const handlers: { [classname in RealisedClasses]: (this: D2, t: T) => any } = {
-  [Class.NSMutableArray](v: any) {
+const handlers: { [classname in RealisedClass]: (this: D2, t: ArchivedItem) => any } = {
+  [ClassName.NSMutableArray](v: any) {
     const ar = v as NSArray;
     return ar['NS.objects'].map(ref => this.do(this.lookup(ref)))
   },
 
-  [Class.NSDictionary](v: any) {
+  [ClassName.NSDictionary](v: any) {
     const ar = v as NSDictionary;
     return fromPairs(zip(ar["NS.keys"], ar['NS.objects'])
       .map(([k, v]) => [this.lookup<string>(k), this.do(this.lookup(v))]));
   },
 
-  [Class.NSMutableDictionary](v: any) {
+  [ClassName.NSMutableDictionary](v: any) {
     const ar = v as NSDictionary;
     return fromPairs(zip(ar["NS.keys"], ar['NS.objects'])
       .map(([k, v]) => [this.lookup<string>(k), this.do(this.lookup(v))]));
   },
 
-  [Class.NSMutableString](v: T) {
+  [ClassName.NSMutableString](v: ArchivedItem) {
     return (v as NSString)["NS.string"];
   },
 
-  [Class.NSArray](v: any) {
+  [ClassName.NSArray](v: any) {
     const ar = v as NSArray;
     return ar['NS.objects'].map(ref => this.do(this.lookup(ref)))
   },
 
-  [Class.NSValue](v: T) {
+  [ClassName.NSValue](v: ArchivedItem) {
     const ar = v as NSValue;
     if (ar["NS.special"] === NSSpecialValueTypes.NSSize) {
       return {

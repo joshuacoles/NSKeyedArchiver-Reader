@@ -25,6 +25,7 @@ but I hope this may be useful in similar sitations.
 
 - `convert-plist-to-json.ts`, useful if you need to inspect the json output from
   `bplist-parser`.
+- `d2.ts` actually run the converter.
 
 ## Useful links 
 

@@ -1,6 +1,12 @@
 import R from "ramda";
 
-export type ObjectType = boolean | number | string | NSObject | NSClass | Other;
+export type ObjectType = boolean | number | string | ArchivedItem | NSClassInfo;
+
+export interface Top {
+  root?: Reference;
+}
+
+export type ArchivedItem = { $class: Reference };
 
 export interface NSKeyedArchive {
   $version: 100000;
@@ -9,57 +15,24 @@ export interface NSKeyedArchive {
   $objects: ObjectType[];
 }
 
-export interface NSDictionary {
-  $class: Reference;
-
-  "NS.keys": Reference[];
-  "NS.objects": Reference[];
-}
-
-export interface NSArray {
-  $class: Reference;
-
-  "NS.objects": Reference[];
-}
-
-export function isNSDictionary(nsObject: NSObject): nsObject is NSDictionary {
-  return R.has('NS.keys', nsObject);
-}
-
-export function isNSArray(nsObject: NSObject): nsObject is NSArray {
-  return !isNSDictionary(nsObject) && R.has('NS.objects', nsObject);
-}
-
-export type NSObject = NSDictionary | NSArray | Other;
-
-export interface NSClass {
-  $classname: Class;
-  $classes: Class[];
-}
-
-export interface Other {
-  $class: Reference;
-
-  "NS.rectval"?: Reference;
-  "NS.special"?: number;
-  "NS.sizeval"?: Reference;
-  "NS.string"?: string;
-}
-
 export interface Reference {
   UID: number;
 }
 
-export type RealisedClasses =
-  | Class.NSArray
-  | Class.NSDictionary
-  | Class.NSMutableArray
-  | Class.NSMutableDictionary
-  | Class.NSMutableString
-  | Class.NSValue;
+export interface NSClassInfo {
+  $classname: ClassName;
+  $classes: ClassName[];
+}
 
+export type RealisedClass =
+  | ClassName.NSArray
+  | ClassName.NSDictionary
+  | ClassName.NSMutableArray
+  | ClassName.NSMutableDictionary
+  | ClassName.NSMutableString
+  | ClassName.NSValue;
 
-export enum Class {
+export enum ClassName {
   Empty = "",
   NSArray = "NSArray",
   NSDictionary = "NSDictionary",
@@ -79,6 +52,28 @@ export enum NSSpecialValueTypes {
   NSEdgeInsets = 12,
 }
 
-export interface Top {
-  root?: Reference;
+export interface NSArray extends ArchivedItem {
+  'NS.objects': Reference[]
 }
+
+export interface NSDictionary extends ArchivedItem {
+  $class: Reference,
+  'NS.keys': Reference[]
+  'NS.objects': Reference[]
+}
+
+export interface NSString extends ArchivedItem {
+  'NS.string': string
+}
+
+interface NSRect {
+  'NS.special': NSSpecialValueTypes.NSRect
+  'NS.rectval': Reference
+}
+
+interface NSSize {
+  'NS.special': NSSpecialValueTypes.NSSize
+  'NS.sizeval': Reference
+}
+
+export type NSValue = ArchivedItem & (NSRect | NSSize)
