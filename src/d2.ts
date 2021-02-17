@@ -50,7 +50,7 @@ class D2 {
   }
 })()
 
-interface NSMutableArray {
+interface NSArray {
   $class: Reference,
   'NS.objects': Reference[]
 }
@@ -82,7 +82,7 @@ function tap(this: D2, t: T) {
 // We decide what to do with the item based on the class
 const handlers: { [classname in RealisedClasses]: (this: D2, t: T) => any } = {
   [Class.NSMutableArray](v: any) {
-    const ar = v as NSMutableArray;
+    const ar = v as NSArray;
     return ar['NS.objects'].map(ref => this.do(this.lookup(ref)))
   },
 
@@ -103,7 +103,7 @@ const handlers: { [classname in RealisedClasses]: (this: D2, t: T) => any } = {
   },
 
   [Class.NSArray](v: any) {
-    const ar = v as NSMutableArray;
+    const ar = v as NSArray;
     return ar['NS.objects'].map(ref => this.do(this.lookup(ref)))
   },
 
