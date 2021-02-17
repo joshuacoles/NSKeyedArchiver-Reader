@@ -39,10 +39,7 @@ class D2 {
     if (typeof item !== "object") return item;
 
     let classOf = this.classOf(item);
-
-    let v = handlers[classOf].call(this, item);
-    // console.log(classOf, v);
-    return v;
+    return (handlers[classOf] || tap).call(this, item);
   }
 }
 
