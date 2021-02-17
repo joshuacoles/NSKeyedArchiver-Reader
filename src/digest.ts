@@ -1,10 +1,10 @@
 import {
-  isKeyedObject,
-  isUnkeyedObject,
+  isNSDictionary,
+  isNSArray,
   NSClass,
   NSKeyedArchive,
   NSObject,
-  NSObjectKeyed,
+  NSDictionary,
   ObjectType,
   Reference
 } from "./types";
@@ -49,7 +49,7 @@ export class Digester {
 
   // Looks like what we have called Keyed / Unkeyed are actually dictionaries and lists, fun
   digestObject(nsObject: NSObject): DigestedObject {
-    if (isKeyedObject(nsObject)) {
+    if (isNSDictionary(nsObject)) {
       return {
         ...fromPairs(
           zip(nsObject["NS.keys"], nsObject["NS.objects"])
@@ -58,7 +58,7 @@ export class Digester {
 
         $class: this.lookup<NSClass>(nsObject.$class).$classname
       };
-    } else if (isUnkeyedObject(nsObject)){
+    } else if (isNSArray(nsObject)){
       return nsObject["NS.objects"].map(ref => this.digest(this.lookup(ref)));
     } else {
       return {
