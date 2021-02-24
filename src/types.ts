@@ -1,6 +1,6 @@
 import R from "ramda";
 
-export type ObjectType = boolean | number | string | ArchivedItem | NSClassInfo;
+export type ObjectType = boolean /*| { type: "Buffer", data: number[] }*/ | number | string | ArchivedItem | NSClassInfo;
 
 export interface Top {
   root?: Reference;

@@ -18,6 +18,8 @@ import globby from "globby";
 import fs from "fs";
 import path from "path";
 
+import * as crypto from "crypto";
+
 class D2 {
   archive: NSKeyedArchive
 
@@ -32,11 +34,23 @@ class D2 {
   }
 
   classOf(item: ArchivedItem): RealisedClass {
+    if (item.$class === undefined) debugger;
     return this.lookup<NSClassInfo>(item.$class).$classname! as RealisedClass;
   }
 
   do(item: ArchivedItem) {
     if (typeof item !== "object") return item;
+
+    // Deal with buffers
+    if (Buffer.isBuffer(item)) {
+      const hash = crypto.createHash('sha512')
+        .update(item)
+        .digest('hex');
+
+      fs.writeFileSync(`./highlights-data/${hash}`, item);
+
+      return { type: "BUFFER_REFERENCE", ref: hash }
+    }
 
     let classOf = this.classOf(item);
     return (handlers[classOf] || tap).call(this, item);
@@ -44,7 +58,7 @@ class D2 {
 }
 
 (async () => {
-  const pls = await globby(['./data/*.plist']);
+  const pls = await globby(['./highlights/*.plist']);
   for (let pl of pls) {
     const [data] = await parseNSKR(pl);
 
@@ -52,7 +66,7 @@ class D2 {
     if (data.$top.root === undefined) continue;
 
     fs.writeFileSync(
-      './jdd/' + path.basename(pl) + '.json',
+      './highlights-json/' + path.basename(pl) + '.json',
       JSON.stringify(d2.do(d2.lookup(data.$top.root))) || ""
     );
   }
@@ -77,6 +91,7 @@ const handlers: { [classname in RealisedClass]: (this: D2, t: ArchivedItem) => a
   },
 
   [ClassName.NSMutableDictionary](v: any) {
+    if (!(v.hasOwnProperty('NS.keys') && v.hasOwnProperty('NS.objects'))) debugger;
     const ar = v as NSDictionary;
     return fromPairs(zip(ar["NS.keys"], ar['NS.objects'])
       .map(([k, v]) => [this.lookup<string>(k), this.do(this.lookup(v))]));
