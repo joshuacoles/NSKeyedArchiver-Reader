@@ -1,4 +1,5 @@
 import R from "ramda";
+import { ParsedObject } from "bplist-parser";
 
 export type ObjectType = boolean /*| { type: "Buffer", data: number[] }*/ | number | string | ArchivedItem | NSClassInfo;
 
@@ -8,7 +9,7 @@ export interface Top {
 
 export type ArchivedItem = { $class: Reference };
 
-export interface NSKeyedArchive {
+export interface NSKeyedArchive extends ParsedObject {
   $version: 100000;
   $archiver: 'NSKeyedArchiver';
   $top: Top;

@@ -13,18 +13,21 @@ import {
   RealisedClass,
   Reference
 } from "./types";
-import { parseNSKR } from "./parse";
-import globby from "globby";
+
 import fs from "fs";
-import path from "path";
 
 import * as crypto from "crypto";
+import assert from "assert";
 
-class D2 {
+export class Digester {
   archive: NSKeyedArchive
+  private handlers: Handlers;
+  private defaultHandler: Handler;
 
-  constructor(archive: NSKeyedArchive) {
+  constructor(archive: NSKeyedArchive, handlers: Handlers = defaultHandlers, defaultHandler: Handler = tap) {
     this.archive = archive;
+    this.handlers = handlers;
+    this.defaultHandler = defaultHandler;
   }
 
   lookup<T extends ObjectType>(reference: Reference): T {
@@ -53,32 +56,25 @@ class D2 {
     }
 
     let classOf = this.classOf(item);
-    return (handlers[classOf] || tap).call(this, item);
+    return (this.handlers[classOf] || this.defaultHandler).call(this, item);
+  }
+
+  run() {
+    assert(this.archive.$top.root != null, "Archive has no root")
+    return this.do(this.lookup(this.archive.$top.root!));
   }
 }
 
-(async () => {
-  const pls = await globby(['./highlights/*.plist']);
-  for (let pl of pls) {
-    const [data] = await parseNSKR(pl);
-
-    let d2 = new D2(data);
-    if (data.$top.root === undefined) continue;
-
-    fs.writeFileSync(
-      './highlights-json/' + path.basename(pl) + '.json',
-      JSON.stringify(d2.do(d2.lookup(data.$top.root))) || ""
-    );
-  }
-})()
-
-function tap(this: D2, t: ArchivedItem) {
+function tap(this: Digester, t: ArchivedItem) {
   console.log(this.classOf(t), t);
   return t;
 }
 
+export type Handler = (this: Digester, t: ArchivedItem) => any;
+export type Handlers = { [classname in RealisedClass]: Handler };
+
 // We decide what to do with the item based on the class
-const handlers: { [classname in RealisedClass]: (this: D2, t: ArchivedItem) => any } = {
+export const defaultHandlers: Handlers = {
   [ClassName.NSMutableArray](v: any) {
     const ar = v as NSArray;
     return ar['NS.objects'].map(ref => this.do(this.lookup(ref)))

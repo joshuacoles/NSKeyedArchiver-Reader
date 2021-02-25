@@ -1,12 +1,13 @@
 # NSKeyedArchiver Reader
 
-A simple script to read data from an `NSKeyedArchiver` binary plist.
+A simple package to read data from an `NSKeyedArchiver` binary plist. For
+example like you would find in a CoreData sqlite file.
 
-In my specific use case these are obtained by cracking open a CoreData sqlite file,
-but I hope this may be useful in similar sitations.
+## Usage
 
+> TODO
 
-## "Method"
+## Splunking "Method"
 
 1. Get some binary plists.
     - For me this was `sqlite3 db.sqlite "SELECT writefile('znotes_' || Z_PK || '.plist', ZNOTES) FROM ZBOOKNOTE WHERE ZNOTES IS NOT NULL"`
